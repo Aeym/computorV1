@@ -10,189 +10,138 @@ if ($argc < 2) {
 
 function parseArg($str) {
     $tmpStr = preg_replace("/\s+/", '', $str);
-    // echo $tmpStr ."\n";
     $tmpArr = explode('=', $tmpStr);
     $left = preg_split("/X\^/", $tmpArr[0], 0, PREG_SPLIT_NO_EMPTY);
     $right = preg_split("/X\^/", $tmpArr[1], 0, PREG_SPLIT_NO_EMPTY);
 
-    $leftCoeff = array('pow0' => 0, 'pow1' => 0, 'pow2' => 0);
-    $rightCoeff = array('pow0' => 0, 'pow1' => 0, 'pow2' => 0);
+    $leftCoeff = array();
+    $rightCoeff = array();
 
-    // echo "\n" . $leftCoeff['pow0'] . "\n";
     $i = 0;
+    $pow = 'pow';
     while ($i < (count($left) - 1)) {
+        $pow .= $i;
         if ($left[$i + 1][0] == '0') {
-            $leftCoeff["pow0"] = substr($left[$i], 0, strlen($left[$i]) - 1);
-        } else if ($left[$i + 1][0] == '1') {
-            $leftCoeff["pow1"] = substr($left[$i], 1, strlen($left[$i]) - 2);
-        } else if ($left[$i + 1][0] == '2') {
-            $leftCoeff["pow2"] = substr($left[$i], 1, strlen($left[$i]) - 2);
+            $leftCoeff[$pow] = substr($left[$i], 0, -1);
+        } else {
+            $leftCoeff[$pow] = substr($left[$i], 1, -1);
         }
+        $pow = substr($pow, 0, -1);
         $i++;
     }
 
     $i = 0;
+    $pow = 'pow';
     while ($i < (count($right) - 1)) {
+        $pow .= $i;
         if ($right[$i + 1][0] == '0') {
-            $rightCoeff["pow0"] = substr($right[$i], 0, strlen($right[$i]) - 1);
-        } else if ($right[$i + 1][0] == '1') {
-            $rightCoeff["pow1"] = substr($right[$i], 1, strlen($right[$i]) - 2);
-        } else if ($right[$i + 1][0] == '2') {
-            $rightCoeff["pow2"] = substr($right[$i], 1, strlen($right[$i]) - 2);
+            $rightCoeff[$pow] = substr($right[$i], 0, -1);
+        } else {
+            $rightCoeff[$pow] = substr($right[$i], 1, -1);
         }
+        $pow = substr($pow, 0, -1);
         $i++;
     }
-
-    echo   "left coeff :\n";
-    print_r($left);
-
-    
-    echo "leftCoeff : \n";
-    print_r($leftCoeff);
-
-    echo   "right coeff :\n";
-    print_r($right);
-
-    echo "rightCoeef : \n";
-    print_r($rightCoeff);
     reduceEqu($leftCoeff, $rightCoeff);
 }
 
 function reduceEqu($leftCoeff, $rightCoeff) {
-    // print_r($leftCoeff);
-    $coeff0 = floatval($leftCoeff['pow0']) - floatval($rightCoeff['pow0']);
-    echo $coeff0 . "\n";
-    // echo intval($leftCoeff['pow0']) . "\n";
-
-    $coeff1 = floatval($leftCoeff['pow1']) - floatval($rightCoeff['pow1']);
-    echo $coeff1 . "\n";
-
-    $coeff2 = floatval($leftCoeff['pow2']) - floatval($rightCoeff['pow2']);
-    echo $coeff2 . "\n\n";
-
-    // echo "Reduced form : " . intval($leftCoeff[0]);
+    $coeffs = array();
+    $c = (count($leftCoeff) > count($rightCoeff)) ? count($leftCoeff) : count($rightCoeff);
+    $i = 0;
+    while ($i < $c) {
+        $l = 0;
+        $r = 0;
+        if (array_key_exists('pow' . $i, $leftCoeff)) {
+            $l = floatval($leftCoeff['pow' . $i]);
+        }
+        if (array_key_exists('pow' . $i, $rightCoeff)) {
+            $r = floatval($rightCoeff['pow' . $i]);
+        }
+        $coeffs[$i] = $l - $r;
+        $i++;
+    }
     $reduceStr = "Reduced form : ";
     $polyDegree = 0;
     $p = 0;
-    if ($coeff0 != 0) {
-        $polyDegree = 0;
-        if ($coeff0 < 0) {
-            $reduceStr .= " -";
-            $coeff0 *= -1;
-            $p = 1;
+    $i = 0;
+    while ($i < count($coeffs)) {
+        if ($coeffs[$i] != 0) {
+            $polyDegree = $i;
+            if ($coeffs[$i] < 0) {
+                $reduceStr .= " - ";
+                $coeffs[$i] *= -1;
+                $p = 1;
+            } else if ($i != 0) {
+                $reduceStr .= " + ";
+            }
+            $reduceStr .= $coeffs[$i] . " * X^" . $i;
+            if ($p == 1) {
+                $coeffs[$i] *= -1;
+                $p = 0;
+            }
         }
-        $reduceStr .= $coeff0 . " * X^0";
-        if ($p == 1) {
-            $coeff0 *= -1;
-            $p = 0;
-        }
+        $i++;
     }
-    if ($coeff1 != 0) {
-        $polyDegree = 1;
-        if ($coeff1 < 0) {
-            $reduceStr .= " - ";
-            $coeff1 *= -1;
-            $p = 1;
-        } else {
-            $reduceStr .= " + ";
-        }
-        $reduceStr .= $coeff1 . " * X^1";
-        if ($p == 1) {
-            $coeff1 *= -1;
-            $p = 0;
-        }
-    }
-    if ($coeff2 != 0) {
-        $polyDegree = 2;
-        if ($coeff2 < 0) {
-            $reduceStr .= " - ";
-            $coeff2 *= -1;
-            $p = 1;
-        } else {
-            $reduceStr .= " + ";
-        }
-        $reduceStr .= $coeff2 . " * X^2";
-        if ($p == 1) {
-            $coeff2 *= -1;
-            $p = 0;
-        }
+    if ($reduceStr == "Reduced form : ") {
+        $reduceStr .= '0';
     }
     $reduceStr .= " = 0\n";
-    if ($coeff0 == 0 && $coeff1 == 0 && $coeff2 == 0) {
-        echo "Tous les nombres réels sont solutions.\n";
-    } else {
-        echo $reduceStr;
-    }
+    echo $reduceStr;
     echo "Polynomial degree: " . $polyDegree . "\n";
-
-    solution($coeff0, $coeff1, $coeff2, $polyDegree);
+    solution($coeffs, $polyDegree);
 }
 
-function solution($coeff0, $coeff1, $coeff2, $polyDegree) {
+function solution($coeffs, $polyDegree) {
     $result = '';
-    $sol1 = 0;
-    $sol2 = 0;
     if ($polyDegree == 0) {
-        if ($coeff0 == 0) {
-            $result .= "Il n'y a pas de solutions.\n";
+        if ($coeffs[0] != 0) {
+            $result .= "There is no solution.\n";
         } else {
-            $result .= "Tous les nombres réels sont solutions.\n";
+            $result .= "All real numbers are solution.\n";
         }
     } else if ($polyDegree == 1) {
-        $sol1 = ($coeff0 / $coeff1) * (-1);
-        // echo $sol1;
+        $result .= "The solution is :\n";
+        $result .= ($coeffs[0] / $coeffs[1]) * (-1);
     } else if ($polyDegree == 2) {
-        echo "on est dans poly = 2\n";
-        echo $coeff1 . " * " . $coeff1 . "-4.0 * " . $coeff2 . " * " . $coeff0;
-        echo "\n";
-        $disc = $coeff1 * $coeff1 - 4.0 * $coeff2 * $coeff0;
-        echo $disc . "\n";
+        $disc = $coeffs[1] * $coeffs[1] - 4.0 * $coeffs[2] * $coeffs[0];
         if ($disc < 0.0) {
-            echo "Discriminant is strictly negative, the two complexes solutions are:\n";
-            $result .= "complexe a faire";
+            $result .= "Discriminant is strictly negative, the two complexes solutions are:\n";
+            if ($coeffs[1] != 0.0) {
+                $result .= '(-' .  $coeffs[1] . ' - iV(' . (-1) * $disc . ')) / ' . 2 * $coeffs[2] . "\n"; 
+                $result .= '(-' .  $coeffs[1] . ' + iV(' . (-1) * $disc . ')) / ' . 2 * $coeffs[2]; 
+            } else {
+                $result .= '(-iV(' . (-1) * $disc . ')) / (' . 2 * $coeffs[2] . ")\n"; 
+                $result .= '(iV(' . (-1) * $disc . ')) / (' . 2 * $coeffs[2] .')'; 
+            }
         } else if ($disc == 0.0) {
-            echo "Discriminant is 0, the unique solution is:\n";
-            echo (-1) * $coeff1 / (2 * $coeff0);
+            $result .= "Discriminant is 0, the unique solution is:\n";
+            $result .= (-1) * $coeffs[1] / (2 * $coeffs[0]);
         } else if ($disc > 0.0) {
-            echo "Discriminant is strictly positive, the two solutions are:\n";
-            echo ((-1) * $coeff1 - sqrt($disc)) / (2 * $coeff2);
-            echo "\n";
-            echo ((-1) * $coeff1 + sqrt($disc)) / (2 * $coeff2);            
+            $result .= "Discriminant is strictly positive, the two solutions are:\n";
+            $result .= ((-1) * $coeffs[1] - sqrtMy($disc)) / (2 * $coeffs[2]);
+            $result .= "\n";
+            $result .= ((-1) * $coeffs[1] + sqrtMy($disc)) / (2 * $coeffs[2]);            
         }
     } else {
         $result .= "The polynomial degree is stricly greater than 2, I can't solve.";
     }
+    echo $result;
 
 
 }
 
 
-// function racine($pow) {
-//     $i = 1;
-//     while ($i < $pow) {
-//         if (($i * $i) == $pow) {
-//             return $i;
-//         }
-//         $i++;
-//     }
-// }
-
-
-// function racine($pow) {
-//     echo "?????????";
-//     echo $pow;
-//     if ($pow == 0.0) {
-//         return 0;
-//     } else {
-//         $tmp1 = $pow / 2.0;
-//         while(1) {
-//             $tmp2 = ($tmp1 + $pow / $tmp1) / 2;
-//             if (abs($tmp2 - $tmp1) < 0.00001) {
-//                 return $tmp2;
-//             } else {
-//                 $tmp1 = $tmp2;
-//             }
-//         }
-//     }
-// }
+// fonction sqrt bakhshali method
+function sqrtMy($f)
+{
+   $i = 0; 
+   while( ($i * $i) <= $f)
+          $i++;
+    $i--; 
+    $d = $f - $i * $i; 
+    $p = $d/(2*$i); 
+    $a = $i + $p; 
+    return $a-($p*$p)/(2*$a);
+}  
 ?>
